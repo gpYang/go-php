@@ -22,7 +22,7 @@ func init() {
 
 // Time - php time()
 func Time() int64 {
-	return time.Now().In(_zone).Unix()
+	return nowTime().Unix()
 }
 
 // Strtotime - php strtotime()
@@ -120,19 +120,22 @@ func DateDefaultTimezoneGet() string {
 }
 
 // LastDateOfMonth gets the last date of the month which the given time is in
-func LastDateOfMonth(tm time.Time) time.Time {
-	t2 := FirstDateOfNextMonth(tm)
-	return time.Unix(t2.Unix()-86400, 0)
+func LastDateOfMonth(timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
+	t2 := FirstDateOfNextMonth(tm.Unix())
+	return t2 - 86400
 }
 
 // FirstDateOfMonth gets the first date of the month which the given time is in
-func FirstDateOfMonth(tm time.Time) time.Time {
+func FirstDateOfMonth(timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
 	year, month, _ := tm.Date()
-	return time.Date(year, month, 1, 0, 0, 0, 0, _zone)
+	return time.Date(year, month, 1, tm.Hour(), tm.Minute(), tm.Second(), 0, _zone).Unix()
 }
 
 // FirstDateOfNextMonth gets the first date of next month
-func FirstDateOfNextMonth(tm time.Time) time.Time {
+func FirstDateOfNextMonth(timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
 	year, month, _ := tm.Date()
 	if month == time.December {
 		year++
@@ -140,11 +143,12 @@ func FirstDateOfNextMonth(tm time.Time) time.Time {
 	} else {
 		month++
 	}
-	return time.Date(year, month, 1, 0, 0, 0, 0, _zone)
+	return time.Date(year, month, 1, tm.Hour(), tm.Minute(), tm.Second(), 0, _zone).Unix()
 }
 
 // FirstDateOfLastMonth gets the first date of last month
-func FirstDateOfLastMonth(tm time.Time) time.Time {
+func FirstDateOfLastMonth(timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
 	year, month, _ := tm.Date()
 	if month == time.January {
 		year--
@@ -152,7 +156,7 @@ func FirstDateOfLastMonth(tm time.Time) time.Time {
 	} else {
 		month--
 	}
-	return time.Date(year, month, 1, 0, 0, 0, 0, _zone)
+	return time.Date(year, month, 1, tm.Hour(), tm.Minute(), tm.Second(), 0, _zone).Unix()
 }
 
 // Mktime - php mktime()
@@ -160,9 +164,35 @@ func Mktime(hour int64, min int64, sec int64, mon time.Month, day int64, year in
 	return time.Date(int(year), mon, int(day), int(hour), int(min), int(sec), 0, _zone).Unix()
 }
 
+// LastWeekday get last monday to sunday
+// eg. LastWeekday(7) get last sunday
+func LastWeekday(day time.Weekday, timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
+	now := int(tm.Weekday())
+	diff := (int(day) - now + 7) * 86400
+	return tm.Unix() + int64(diff)
+}
+
+// NextWeekday get next monday to sunday
+// eg. NextWeekda(7) get next sunday
+func NextWeekday(day time.Weekday, timestamps ...int64) int64 {
+	tm := nowTime(timestamps...)
+	now := int(tm.Weekday())
+	diff := (int(day) - now - 7) * 86400
+	return tm.Unix() + int64(diff)
+}
+
 // isLeapYear checks if the given time is in a leap year
 func isLeapYear(tm time.Time) bool {
 	return tm.YearDay() == 366
+}
+
+// get time package from timestamp or not
+func nowTime(timestamps ...int64) time.Time {
+	if len(timestamps) > 0 {
+		return time.Unix(timestamps[0], 0).In(_zone)
+	}
+	return time.Now().In(_zone)
 }
 
 // recognize the character in the php date/time format string
@@ -191,7 +221,7 @@ func recognize(c string, tm time.Time) string {
 	case "n": // Numeric representation of a month, without leading zeros
 		return fmt.Sprintf("%d", tm.Month())
 	case "t": // Number of days in the given month
-		return LastDateOfMonth(tm).Format("2")
+		return nowTime(LastDateOfMonth(tm.Unix())).Format("2")
 
 	// Week
 	case "W": // ISO-8601 week number of year, weeks starting on Monday
