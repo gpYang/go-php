@@ -160,8 +160,8 @@ func FirstDateOfLastMonth(timestamps ...int64) int64 {
 }
 
 // Mktime - php mktime()
-func Mktime(hour int64, min int64, sec int64, mon time.Month, day int64, year int64) int64 {
-	return time.Date(int(year), mon, int(day), int(hour), int(min), int(sec), 0, _zone).Unix()
+func Mktime(hour int, min int, sec int, mon time.Month, day int, year int) int64 {
+	return time.Date(year, mon, day, hour, min, sec, 0, _zone).Unix()
 }
 
 // LastWeekday get last monday to sunday
@@ -174,12 +174,17 @@ func LastWeekday(day time.Weekday, timestamps ...int64) int64 {
 }
 
 // NextWeekday get next monday to sunday
-// eg. NextWeekda(7) get next sunday
+// eg. NextWeekday(7) get next sunday
 func NextWeekday(day time.Weekday, timestamps ...int64) int64 {
 	tm := nowTime(timestamps...)
 	now := int(tm.Weekday())
 	diff := (int(day) - now - 7) * 86400
 	return tm.Unix() + int64(diff)
+}
+
+// Microtime return microtime
+func Microtime() int64 {
+	return int64(nowTime().UnixNano()) / 100000
 }
 
 // isLeapYear checks if the given time is in a leap year
